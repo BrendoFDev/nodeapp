@@ -1,14 +1,36 @@
 const express = require('express');
 const router = require('./router');
 const sequelize = require('./services/db');
+const session = require('express-session')
+const sequelizeStorage = require('connect-session-sequelize')(session.Store)
 
 const app = express();
 const port = 3000;
 
-
-app.use(express.json())
 app.use(express.urlencoded({extended:true}));
 app.use(router);
+
+const sessionStorage = new sequelizeStorage({
+    db:sequelize,
+});
+
+const sessionPassword =  process.env.SESSION_PASS ? process.env.SESSION_PASS.split(',') : 'senha_fallback_segura';
+
+app.use(
+    session({
+        secret:sessionPassword,
+        store:sessionStorage,
+        resave: false,
+        saveUninitialized:false,
+        cookie:{
+            maxAge: 1000 * 60 * 60 * 24,
+        },
+    })
+);
+
+
+app.set('view engine', 'ejs');
+app.set('views', './src');
 
 (async () => {
     try {
