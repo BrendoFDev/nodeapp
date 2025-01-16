@@ -12,8 +12,8 @@ exports.createUser = async (req,res)=>{
 
 exports.login = async (req,res) => {
    try{
-      const response = await userService.userLogin(req,res);
-      return res.status(response.status).json({message:response.message});
+      return await userService.userLogin(req,res);
+      
    }
    catch(error){
          console.log(error)

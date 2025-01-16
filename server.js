@@ -1,5 +1,12 @@
 const express = require('express');
 const router = require('./router');
+const path  = require('path');
+const helmet = require('helmet');
+const surf = require('csurf');
+
+const helmetMiddlewares = require('./src/middlewares/helmetMiddleware')
+const {authenticateSession} = require('./src/middlewares/sessionMiddleware')
+
 const sequelize = require('./services/db');
 const session = require('express-session')
 const sequelizeStorage = require('connect-session-sequelize')(session.Store)
@@ -7,8 +14,12 @@ const sequelizeStorage = require('connect-session-sequelize')(session.Store)
 const app = express();
 const port = 3000;
 
+app.set('view engine', 'ejs');
+app.set('views', path.resolve('src'));
+
 app.use(express.urlencoded({extended:true}));
-app.use(router);
+
+app.use(helmet());
 
 const sessionStorage = new sequelizeStorage({
     db:sequelize,
@@ -18,19 +29,34 @@ const sessionPassword =  process.env.SESSION_PASS ? process.env.SESSION_PASS.spl
 
 app.use(
     session({
-        secret:sessionPassword,
-        store:sessionStorage,
+        secret: sessionPassword,
+        store: sessionStorage, // Armazena as sessões no banco
         resave: false,
-        saveUninitialized:false,
-        cookie:{
-            maxAge: 1000 * 60 * 60 * 24,
+        saveUninitialized: false,
+        cookie: {
+            maxAge: 1000 * 60 * 60 * 24, // Duração de 24 horas
         },
     })
 );
+app.use(surf());
 
+// Middlewares
+app.use(helmetMiddlewares.processCsfrError)
+app.use(helmetMiddlewares.csrfTokenGenerator)
+app.use((req,res,next) =>{
 
-app.set('view engine', 'ejs');
-app.set('views', './src');
+    const publicRoutes = ['login'];
+
+    if(publicRoutes.includes(req.path))
+        return next();
+    
+    authenticateSession(req,res,next)
+
+    }
+);
+
+app.use(router);
+
 
 (async () => {
     try {

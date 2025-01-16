@@ -1,55 +1,68 @@
 const user = require('../models/userModel')
-const sequelize = require('../services/db')
+    exports.createUser =  async (req,res) => {
 
-exports.createUser =  async (req,res) => {
-
-    try{
-        let body = req.body;
-        await user.create({name: body.Name, email: body.Email, password: body.Password});
-        return {status:200, message:"Usuário criado com sucesso"};
-    }
-    catch(Exception){
-        console.log(Exception)
-        return {status:400, message:"Erro ao criar usuário: ", Exception};
-    }
-}
-
-exports.userLogin = async (req, res) => {
-    try{
-        const {Email, Password} = req.body;
-        const user = await getUser(Email,Password);
-        
-        if(user != null){
-            req.session.user = {
-                username:user.Email,
-                password:user.password
-            };
-    
-            res.render('index');
+        try{
+            let body = req.body;
+            await user.create({name: body.Name, email: body.Email, password: body.Password});
+            return {status:200, message:"Usuário criado com sucesso"};
         }
-        else
-            res.render('login');
-        
+        catch(Exception){
+            console.log(Exception)
+            return {status:400, message:"Erro ao criar usuário: ", Exception};
+        }
     }
-    catch(error){
-        console.log(error);
-        return {status:500, message:`Erro ao logar: ${Exception}`};
-    }
-}
 
-async function getUser(Email, Password){
-    try{
-        const user = await user.findOne({
-            where:{
-                "email":Email,
-                "password":Password
+    exports.userLogin = async (req, res) => {
+        try{
+            const {Email, Password} = req.body;
+            const currentUser = await getUser(Email,Password);
+
+            if(currentUser){
+
+                req.session.user = {
+                    name:currentUser.name,
+                    email:currentUser.email
+                };
+            
+                await saveSession(req);
+                return res.status(200).redirect('/index')
             }
-        });
-
-        return user;
+            else
+                return res.status(200).json({ message:'Usuário não encontrado'});
+            
+        }
+        catch(error){
+            console.log(error);
+            return  res.status(200).json({ message:'Erro ao logar'});
+        }
     }
-    catch(error){
-        console.log(error);
-        return null;
-    }   
+
+    async function getUser(Email, Password){
+        try{
+            let currentUser = await user.findOne({
+                where:{
+                    "email":Email,
+                    "password":Password
+                }
+            });
+
+            return currentUser;
+        }
+        catch(error){
+            console.log(error);
+            return res.status(200).json({ message:'Erro ao logar'});
+        }   
+    }
+
+    function saveSession(req){
+        return new Promise((resolve,reject)=>{
+        req.session.save((err) => {
+            if (err) {
+                console.log('Erro ao salvar a sessão:', err);
+                return reject(err)
+            }
+            resolve();
+        });
+    });
+
 }

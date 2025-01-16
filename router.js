@@ -8,7 +8,8 @@ const screenController = require('./controllers/screenController');
 
 //screen
 router.post('/login', userController.login)
-
+router.get('/login', screenController.login)
+router.get('/index',screenController.index)
 //user
 router.post('/user',userController.createUser)
 

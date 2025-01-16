@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('./sequelize');
 
-const Session = sequelize.define('Session', {
+const Session = sequelize.define('session', {
     sid: {
       type: DataTypes.STRING,
       primaryKey: true,
